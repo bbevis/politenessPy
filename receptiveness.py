@@ -341,6 +341,7 @@ class receptiveness:
         
         scores = self.feat_counts(text, self.kw)
         scores = self.normalise_scores(scores)
+        scores = scores.rename(columns={"Features": "features", "Counts": "feature_counts", "Counts_norms": "features_per_wordcount"})
         
         delta = round(time.process_time() - start_time, 3)
         print('Runtime: ', delta)
@@ -349,7 +350,7 @@ class receptiveness:
 
 if __name__ == "__main__":
     
-    text = 'I understand your perspective but you are so dumb.'
+    text = 'Hello! I understand your perspective but you are so dumb.'
     recp = receptiveness(text)
 
     features = recp.extract_features(text)
