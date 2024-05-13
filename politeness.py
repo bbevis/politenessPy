@@ -8,7 +8,7 @@ import time
 nlp = en_core_web_sm.load()
 
 
-class politeness:
+class feature_extraction:
     
     def __init__(self, text):
         
@@ -351,7 +351,7 @@ class politeness:
 if __name__ == "__main__":
     
     text = 'Hello! I understand your perspective but you are so dumb.'
-    recp = politeness(text)
+    recp = feature_extraction(text)
 
     features = recp.extract_features(text)
     print(features)
