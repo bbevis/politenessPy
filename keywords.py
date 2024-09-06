@@ -7264,6 +7264,32 @@ kw = {
             " whoops ",
             " oops "
         ],
+        "Third_Person": [
+            " he ",
+            " him ",
+            " his ",
+            " himself ",
+            " she ",
+            " her ",
+            " hers ",
+            " herself ",
+            " they ",
+            " them ",
+            " their ",
+            " theirs ",
+            " themselves "
+        ],
+        "Contrast_Conjunction": [
+            " but ",
+            " however ",
+            " instead ",
+            " although ",
+            " even though ",
+            " despite ",
+            " and yet ",
+            " nevertheless ",
+            " nonetheless "
+        ],
         "Ask_Agency": [
             " do me a favor ",
             " do me a favour ",

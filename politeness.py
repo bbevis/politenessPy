@@ -320,8 +320,8 @@ class feature_extraction:
 
         scores = scores.sort_values(by='Counts', ascending=False)
 
-        tokens = self.token_count(doc_text)
-        scores.loc[len(scores)] = ['Token_count', tokens]
+        # tokens = self.token_count(doc_text)
+        # scores.loc[len(scores)] = ['Token_count', tokens]
 
         return scores
 
@@ -340,8 +340,9 @@ class feature_extraction:
         start_time = time.process_time()
         
         scores = self.feat_counts(text, self.kw)
-        scores = self.normalise_scores(scores)
-        scores = scores.rename(columns={"Features": "features", "Counts": "feature_counts", "Counts_norms": "features_per_wordcount"})
+        # scores = self.normalise_scores(scores)
+        # scores = scores.rename(columns={"Features": "features", "Counts": "feature_counts", "Counts_norms": "features_per_wordcount"})
+        scores = scores.rename(columns={"Features": "features", "Counts": "feature_counts"})
         
         delta = round(time.process_time() - start_time, 3)
         print('Runtime: ', delta)
