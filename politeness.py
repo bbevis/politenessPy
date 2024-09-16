@@ -10,7 +10,7 @@ nlp = en_core_web_sm.load()
 
 class feature_extraction:
     
-    def __init__(self, text):
+    def __init__(self):
         
         self.main_features = ['Acknowledgement', 'Agreement', 'Hedges', 'Negation', 'Positive_Emotion', 'Subjectivity', 'Adverb_Limiter', 'Disagreement', 'Negative_Emotion']
         self.main_features_pos = ['Acknowledgement', 'Agreement', 'Hedges', 'Positive_Emotion', 'Subjectivity']
@@ -352,7 +352,7 @@ class feature_extraction:
 if __name__ == "__main__":
     
     text = 'Hello! I understand your perspective but you are so dumb.'
-    recp = feature_extraction(text)
+    recp = feature_extraction()
 
     features = recp.extract_features(text)
     print(features)
