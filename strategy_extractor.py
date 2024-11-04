@@ -311,7 +311,8 @@ def get_2024_politeness_strategy_features(text):
         # Store the count of occurrences for politeness strategies
         politeness_strategies[col] = len(marker_rows)
         
-    politeness_strategies = {f"{"feature_politeness_=="}{key}{"=="}": value for key, value in politeness_strategies.items()}
+    # politeness_strategies = {f"{"feature_politeness_=="}{key}{"=="}": value for key, value in politeness_strategies.items()}
+    politeness_strategies = {f"feature_politeness_=={key}==": value for key, value in politeness_strategies.items()}
 
     # Combine the two dictionaries into one under 'utterances'
     utterances = {
