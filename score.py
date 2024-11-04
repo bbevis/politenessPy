@@ -1,7 +1,7 @@
 
 import pandas as pd
 import numpy as np
-import politeness
+import strategy_extractor
 import pretrained_weights
 
 
@@ -17,7 +17,7 @@ class receptiveness_score:
     def predict_score(self):
         
         # Use politeness script to extract linguistic features
-        recp = politeness.feature_extraction(self.text)
+        recp = strategy_extractor.feature_extraction(self.text)
         features = recp.extract_features(self.text).set_index('features').loc[self.recept_feats]
         X = features['feature_counts'].to_list()
         X.insert(0, 1)
