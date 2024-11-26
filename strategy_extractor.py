@@ -293,6 +293,19 @@ def feat_counts(text, kw):
 def get_2024_politeness_strategy_features(text):
 
     df = feat_counts(text, kw)
+
+    # Named columns to start and end
+    start_column = "Agreement"
+    end_column = "Adverb_Limiters"
+
+    # Find column indices
+    start_idx = df.columns.get_loc(start_column)
+    end_idx = df.columns.get_loc(end_column)
+    
+    # Select columns within the range
+    prevalence = df.iloc[:, start_idx:end_idx+1]  # Include the end column
+    prevalence = prevalence.sum(axis=0)
+
     # Define the columns that will be used for politeness markers
     politeness_columns = df.columns[11:]  # Starting from the 12th column (index 11) REPLACE WITH COLUMN NAMES
 
@@ -303,27 +316,27 @@ def get_2024_politeness_strategy_features(text):
     # Iterate over each of the politeness columns and construct the dictionaries
     for col in politeness_columns:
         # Filter rows where the politeness marker is 1
-        marker_rows = df[df[col] == 1][['TOKEN', 'HEAD_TEXT','SENT_NUM', 'WORD_NUM']].values.tolist()
+        # print(df[df[col] > 0])
+        marker_rows = df[df[col] > 0][['TOKEN', 'HEAD_TEXT','SENT_NUM', 'WORD_NUM']].values.tolist()
         
         # Store the list of dictionaries for politeness markers
         politeness_markers[col] = marker_rows
         
         # Store the count of occurrences for politeness strategies
-        politeness_strategies[col] = len(marker_rows)
+        if len(marker_rows) != 0:
+            politeness_strategies[col] = int(df[col].sum())
+        else:
+            politeness_strategies[col] = 0
         
-    # politeness_strategies = {f"{"feature_politeness_=="}{key}{"=="}": value for key, value in politeness_strategies.items()}
     politeness_strategies = {f"feature_politeness_=={key}==": value for key, value in politeness_strategies.items()}
 
-    # Combine the two dictionaries into one under 'utterances'
-    utterances = {
+    # Combine the two dictionaries into one
+    meta = {
         'politeness_markers': politeness_markers,
         'politeness_strategies': politeness_strategies
     }
 
-    # Output the combined dictionary
-    utterances
-
-    return utterances
+    return prevalence, meta
 
 if __name__ == "__main__":
     
@@ -331,9 +344,12 @@ if __name__ == "__main__":
     
     text = 'Hello! I understand your perspective but I do not agree, I do concur. I believe. Just negate. Sorry. What was the question? Is it random? But I do not understand why this is an issue. I fucking hate this! I disagree so much. Not great. This is terribly annoying!'
 
-    features = get_2024_politeness_strategy_features(text)
+    prevalence, meta = get_2024_politeness_strategy_features(text)
+    
+    print(prevalence)
+    print(meta)
     # Pretty print the dictionary with indentation
-    print(json.dumps(features, indent=4))
+    print(json.dumps(meta, indent=4))
     
     delta = round(time.process_time() - start_time, 3)
     print('Runtime: ', delta)
