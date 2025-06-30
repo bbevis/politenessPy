@@ -7262,7 +7262,8 @@ kw = {
             " sorry ",
             " woops ",
             " whoops ",
-            " oops "
+            " oops ",
+            " apology "
         ],
         "Third_Person": [
             " he ",
@@ -7393,7 +7394,7 @@ kw = {
         "Gratitude": [
             " thank ",
             " thanks ",
-            " thank you ",
+            #" thank you ",
             " grateful ",
             " gratitude ",
             " cheers "

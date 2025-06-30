@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import re
-import keywords
+import convokit.politeness_collections.politeness_2025.keywords as keywords
 import en_core_web_sm
 import time
 import json
@@ -169,28 +169,103 @@ def bare_command(spacy_df):
 
 def Question(spacy_df):
     """
-    Counts number of prespecified question words
+    Identifies WH and Yes/No questions using a hybrid approach:
+    
+    - Checks for sentences ending in '?' and uses the POS tag of the 
+      first word to classify as WH or Yes/No question.
+    - For all other sentences, uses simple rule-based lexical patterns
+      (e.g., 'what is', 'do you') to detect WH and Yes/No questions.
+    
+    Ensures each sentence is counted only once (no double-counting).
+    Adds question counts at the TOKEN level using columns:
+        - 'WH_Questions'
+        - 'YesNo_Questions'
+    
+    Parameters:
+        spacy_df (pd.DataFrame): Must contain at least the columns:
+            - 'TOKEN': text of each token
+            - 'POS': part-of-speech tag
+            - 'TAG': fine-grained tag (for WH-tags)
+            - 'SENT_NUM': sentence index
+            - 'WORD_NUM': word position in sentence
+            - 'TOKEN_INDEX': unique token identifier
+    Returns:
+        spacy_df with added columns.
     """
 
-    # question_keywords = set([' who ', ' what ', ' where ', ' when ', ' why ', ' how ', ' which '])
-    search_tags = set(['WRB', 'WP', 'WDT'])
+    # POS tags for WH-words like who/what/where
+    search_tags = {'WRB', 'WP', 'WDT'}
     
-    # subset sentence numbers and get the first word from that sentence if the last word is a question mark.
-    sent_idx = spacy_df['SENT_NUM'][(spacy_df['TOKEN'] == '?') & (spacy_df['POS'] == 'PUNCT')]
-    
-    # create new column wh question. If tag is in list of search_tags, return TOKEN_INDEX
-    # Use TOKEN_INDEX to add 1 to correct row
+    # WH-words and common auxiliaries that follow them in real questions
+    wh_words = {'what', 'who', 'where', 'when', 'why', 'how', 'which'}
+    wh_followers = {
+        'what': {'are', 'is', 'do', 'does', 'can', 'should', 'might'},
+        'who': {'is', 'are', 'was', 'can', 'should'},
+        'where': {'is', 'are', 'can', 'should'},
+        'when': {'is', 'are', 'can', 'should'},
+        'why': {'is', 'are', 'do', 'does', 'can', 'might', 'would'},
+        'how': {'is', 'are', 'do', 'does', 'can', 'should', 'would'},
+        'which': {'is', 'are', 'was', 'can', 'should'}
+    }
+
+    # Auxiliaries that typically initiate Yes/No questions
+    yesno_aux = {'do', 'does', 'did', 'have', 'has', 'had',
+                 'can', 'could', 'may', 'might', 'shall', 'should',
+                 'will', 'would', 'is', 'are', 'was', 'were', 'am'}
+
+    # Pronouns that often follow auxiliaries in Yes/No questions
+    pronoun_followers = {'i', 'you', 'we', 'he', 'she', 'they', 'it'}
+
+    # Initialize output columns
     spacy_df['WH_Questions'] = 0
     spacy_df['YesNo_Questions'] = 0
-    
-    for sent_num in sent_idx:
-        idx = spacy_df['TOKEN_INDEX'][(spacy_df['SENT_NUM'] == sent_num) & (spacy_df['WORD_NUM'] == 1)].item()
-        if spacy_df['TAG'][(spacy_df['SENT_NUM'] == sent_num) & (spacy_df['WORD_NUM'] == 1)].item() in search_tags:
-           spacy_df.loc[spacy_df['TOKEN_INDEX'].apply(lambda x: x == idx), 'WH_Questions'] += 1
-        else:
-            spacy_df.loc[spacy_df['TOKEN_INDEX'].apply(lambda x: x == idx), 'YesNo_Questions'] += 1
-        
+
+    # Track sentences already counted to avoid double-counting
+    detected_sentences = set()
+
+    # Detect questions using punctuation ('?') and POS tag of first word ---
+    question_sents = spacy_df.loc[
+        (spacy_df['TOKEN'] == '?') & (spacy_df['POS'] == 'PUNCT'), 'SENT_NUM'
+    ]
+
+    for sent_num in question_sents:
+        # Get the first word of the sentence
+        first_word = spacy_df[(spacy_df['SENT_NUM'] == sent_num) & (spacy_df['WORD_NUM'] == 1)]
+        if not first_word.empty:
+            tag = first_word.iloc[0]['TAG']
+            idx = first_word.iloc[0]['TOKEN_INDEX']
+            # If it's a WH-tag, mark WH question; else mark Yes/No
+            if tag in search_tags:
+                spacy_df.loc[spacy_df['TOKEN_INDEX'] == idx, 'WH_Questions'] += 1
+            else:
+                spacy_df.loc[spacy_df['TOKEN_INDEX'] == idx, 'YesNo_Questions'] += 1
+            detected_sentences.add(sent_num)
+
+    # For remaining sentences, apply lexical rule-based detection ---
+    # Extract tokens and their metadata for fast access
+    tokens = spacy_df['TOKEN'].astype(str).str.lower().tolist()
+    indices = spacy_df['TOKEN_INDEX'].tolist()
+    sent_nums = spacy_df['SENT_NUM'].tolist()
+
+    for i in range(len(tokens) - 1):  # Avoid out-of-range on i+1
+        if sent_nums[i] in detected_sentences:
+            continue  # Skip sentences already counted
+
+        word = tokens[i]
+        next_word = tokens[i+1]
+
+        # Pattern: WH-word followed by common question-forming auxiliary
+        if word in wh_words and next_word in wh_followers.get(word, set()):
+            spacy_df.loc[spacy_df['TOKEN_INDEX'] == indices[i], 'WH_Questions'] += 1
+            detected_sentences.add(sent_nums[i])
+
+        # Pattern: auxiliary followed by a pronoun (Yes/No question)
+        elif word in yesno_aux and next_word in pronoun_followers:
+            spacy_df.loc[spacy_df['TOKEN_INDEX'] == indices[i], 'YesNo_Questions'] += 1
+            detected_sentences.add(sent_nums[i])
+
     return spacy_df
+
 
 def adverb_limiter(keywords, spacy_df):
     """
