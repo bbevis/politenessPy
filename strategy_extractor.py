@@ -365,7 +365,7 @@ def feat_counts(text, kw):
 
     return spacy_df
 
-def get_2024_politeness_strategy_features(text):
+def get_2025_politeness_strategy_features(text):
 
     df = feat_counts(text, kw)
 
@@ -419,7 +419,7 @@ if __name__ == "__main__":
     
     text = 'Hello! I understand your perspective but I do not agree, I do concur. I believe. Just negate. Sorry. What was the question? Is it random? But I do not understand why this is an issue. I fucking hate this! I disagree so much. Not great. This is terribly annoying!'
 
-    prevalence, meta = get_2024_politeness_strategy_features(text)
+    prevalence, meta = get_2025_politeness_strategy_features(text)
     
     print(prevalence)
     print(meta)
