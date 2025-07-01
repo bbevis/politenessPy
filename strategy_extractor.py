@@ -6,6 +6,7 @@ import convokit.politeness_collections.politeness_2025.keywords as keywords
 import en_core_web_sm
 import time
 import json
+
 nlp = en_core_web_sm.load()
 
         
@@ -365,7 +366,7 @@ def feat_counts(text, kw):
 
     return spacy_df
 
-def get_2025_politeness_strategy_features(text):
+def _process_single_text(text):
 
     df = feat_counts(text, kw)
 
@@ -412,6 +413,36 @@ def get_2025_politeness_strategy_features(text):
     }
 
     return prevalence, meta
+
+def get_2025_politeness_strategy_features(text):
+    """
+    Flexible politeness feature extractor.
+
+    If text is a single string, returns:
+        - prevalence: Series of counts
+        - meta: dict of markers and strategy counts
+
+    If text is a list or Series of strings, returns:
+        - prevalence_df: DataFrame (one row per string)
+        - meta_list: list of marker/strategy dicts (one per string)
+    """
+    print('Processing text for politeness strategies...')
+    if isinstance(text, str):
+        return _process_single_text(text)
+
+    if isinstance(text, (list, tuple, pd.Series, np.ndarray)):
+        prevalence_list = []
+        meta_list = []
+        for t in text:
+            prevalence, meta = _process_single_text(t)
+            prevalence_list.append(prevalence)
+            meta_list.append(meta)
+        prevalence_df = pd.DataFrame(prevalence_list)
+        return prevalence_df, meta_list
+
+    else:
+        raise TypeError("Input must be a string, list of strings, or pandas Series.")
+
 
 if __name__ == "__main__":
     
