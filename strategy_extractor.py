@@ -3,12 +3,13 @@ import pandas as pd
 import numpy as np
 import re
 import convokit.politeness_collections.politeness_2025.keywords as keywords
+# import keywords
 import en_core_web_sm
 import time
 import json
 
 nlp = en_core_web_sm.load()
-#Testing
+
         
 # main_features = ['Acknowledgement', 'Agreement', 'Hedges', 'Negation', 'Positive_Emotion', 'Subjectivity', 'Adverb_Limiter', 'Disagreement', 'Negative_Emotion']
 # main_features_pos = ['Acknowledgement', 'Agreement', 'Hedges', 'Positive_Emotion', 'Subjectivity']
@@ -211,8 +212,9 @@ def Question(spacy_df):
 
     # Auxiliaries that typically initiate Yes/No questions
     yesno_aux = {'do', 'does', 'did', 'have', 'has', 'had',
-                 'can', 'could', 'may', 'might', 'shall', 'should',
-                 'will', 'would', 'is', 'are', 'was', 'were', 'am'}
+                #  'can', 'could', 'will', 'would', 
+                 'may', 'might', 'shall', 'should',
+                 'is', 'are', 'was', 'were', 'am'}
 
     # Pronouns that often follow auxiliaries in Yes/No questions
     pronoun_followers = {'i', 'you', 'we', 'he', 'she', 'they', 'it'}
@@ -227,20 +229,31 @@ def Question(spacy_df):
     # Detect questions using punctuation ('?') and POS tag of first word ---
     question_sents = spacy_df.loc[
         (spacy_df['TOKEN'] == '?') & (spacy_df['POS'] == 'PUNCT'), 'SENT_NUM'
-    ]
+    ].unique()
 
     for sent_num in question_sents:
-        # Get the first word of the sentence
-        first_word = spacy_df[(spacy_df['SENT_NUM'] == sent_num) & (spacy_df['WORD_NUM'] == 1)]
-        if not first_word.empty:
-            tag = first_word.iloc[0]['TAG']
-            idx = first_word.iloc[0]['TOKEN_INDEX']
-            # If it's a WH-tag, mark WH question; else mark Yes/No
-            if tag in search_tags:
-                spacy_df.loc[spacy_df['TOKEN_INDEX'] == idx, 'WH_Questions'] += 1
-            else:
+        # Get all tokens in the sentence, ordered
+        sent = spacy_df[spacy_df['SENT_NUM'] == sent_num].sort_values('WORD_NUM')
+
+        # Try to find the first WH token in the sentence
+        wh_rows = sent[
+            sent['TAG'].isin(search_tags) |
+            sent['TOKEN'].astype(str).str.lower().isin(wh_words)
+        ]
+
+        if not wh_rows.empty:
+            # Mark the earliest WH token as a WH question
+            wh_row = wh_rows.iloc[0]
+            idx = wh_row['TOKEN_INDEX']
+            spacy_df.loc[spacy_df['TOKEN_INDEX'] == idx, 'WH_Questions'] += 1
+        else:
+            # Fallback: no WH in the sentence → treat as Yes/No question
+            first_word = sent[sent['WORD_NUM'] == 1]
+            if not first_word.empty:
+                idx = first_word.iloc[0]['TOKEN_INDEX']
                 spacy_df.loc[spacy_df['TOKEN_INDEX'] == idx, 'YesNo_Questions'] += 1
-            detected_sentences.add(sent_num)
+
+        detected_sentences.add(sent_num)
 
     # For remaining sentences, apply lexical rule-based detection ---
     # Extract tokens and their metadata for fast access
